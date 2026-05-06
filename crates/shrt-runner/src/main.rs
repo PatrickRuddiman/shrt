@@ -70,6 +70,11 @@ fn run() -> i32 {
             Ok(p) => p,
             Err(e) => {
                 eprintln!("shrt-runner: {}: {}", sidecar_path.display(), e);
+                if matches!(e, path::PathError::NotFound(_)) {
+                    eprintln!(
+                        "shrt-runner: hint: if this is a shell builtin (e.g. echo, dir, cd), recreate the shim with `shrt add ... --shell`"
+                    );
+                }
                 return e.exit_code();
             }
         };

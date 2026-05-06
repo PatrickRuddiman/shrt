@@ -23,7 +23,7 @@ pub fn is_on_path_in(path_var: &str, shim_dir: &Path) -> bool {
         .any(|entry| normalize_for_compare(Path::new(entry)) == needle)
 }
 
-fn normalize_for_compare(p: &Path) -> String {
+pub(crate) fn normalize_for_compare(p: &Path) -> String {
     let mut s = p.to_string_lossy().replace('/', "\\");
     while s.len() > 3 && s.ends_with('\\') {
         s.pop();

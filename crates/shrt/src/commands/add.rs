@@ -23,6 +23,15 @@ pub fn run(ctx: &Ctx, args: &AddArgs) -> anyhow::Result<i32> {
         version: 1,
     };
 
+    if !cfg.shell && which::which(&cfg.target).is_err() {
+        eprintln!(
+            "shrt: warning: target '{}' not found on PATH. If it's a shell builtin \
+             (e.g. echo, dir, cd, set), re-run with --shell. Otherwise pass a full \
+             path via --target.",
+            cfg.target
+        );
+    }
+
     match shim::add(ctx, &args.name, &cfg, args.force) {
         Ok(()) => Ok(0),
         Err(e) => {

@@ -24,7 +24,7 @@ fn missing_env_var_in_template_exits_78() {
 }
 
 #[test]
-fn target_not_found_exits_127() {
+fn target_not_found_exits_127_with_shell_hint() {
     let tmp = make_shim_dir();
     add_stub_shim(tmp.path(), "wt", "{1}", false);
     write_sidecar(
@@ -35,6 +35,12 @@ fn target_not_found_exits_127() {
 
     let output = invoke_shim(tmp.path(), "wt", &[], &[]);
     assert_eq!(output.status.code(), Some(127));
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("--shell"),
+        "expected --shell hint in stderr, got: {}",
+        stderr
+    );
 }
 
 #[test]

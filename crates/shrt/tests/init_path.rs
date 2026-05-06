@@ -70,10 +70,89 @@ fn init_json_includes_required_fields() {
     assert!(output.status.success());
 
     let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
-    assert!(json.get("shim_dir").is_some(), "missing shim_dir");
-    assert!(json.get("created").is_some(), "missing created");
-    assert!(json.get("on_path").is_some(), "missing on_path");
+    for field in &[
+        "shim_dir",
+        "created",
+        "on_path",
+        "path_added",
+        "path_already_present",
+        "path_error",
+    ] {
+        assert!(json.get(*field).is_some(), "missing {}", field);
+    }
     assert!(json["on_path"].is_boolean());
+    assert!(json["path_added"].is_boolean());
+    assert!(json["path_already_present"].is_boolean());
+}
+
+#[cfg(windows)]
+#[test]
+fn init_adds_to_user_path_then_idempotent() {
+    use winreg::enums::*;
+    use winreg::{RegKey, RegValue};
+
+    // Snapshot HKCU\Environment\Path so we can restore it after the test
+    // mutates the user's PATH.
+    struct PathGuard {
+        original: Option<RegValue>,
+    }
+    impl Drop for PathGuard {
+        fn drop(&mut self) {
+            let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+            if let Ok(env) = hkcu.open_subkey_with_flags("Environment", KEY_WRITE) {
+                match self.original.take() {
+                    Some(rv) => {
+                        let _ = env.set_raw_value("Path", &rv);
+                    }
+                    None => {
+                        let _ = env.delete_value("Path");
+                    }
+                }
+            }
+        }
+    }
+
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let env = hkcu
+        .open_subkey_with_flags("Environment", KEY_READ)
+        .expect("open Environment");
+    let _guard = PathGuard {
+        original: env.get_raw_value("Path").ok(),
+    };
+
+    let tmp = tempdir().unwrap();
+    let shim_dir = tmp.path().join("shrt-test-bin");
+
+    // First run: path_added should be true (assuming registry write works).
+    let first = Command::new(shrt_bin())
+        .arg("init")
+        .arg("--shim-dir")
+        .arg(&shim_dir)
+        .arg("--json")
+        .output()
+        .unwrap();
+    assert!(first.status.success());
+    let first_json: serde_json::Value = serde_json::from_slice(&first.stdout).unwrap();
+    assert!(
+        first_json["path_error"].is_null(),
+        "registry write failed: {:?}",
+        first_json["path_error"]
+    );
+    assert_eq!(first_json["path_added"], true);
+    assert_eq!(first_json["path_already_present"], false);
+
+    // Second run: path_already_present should be true.
+    let second = Command::new(shrt_bin())
+        .arg("init")
+        .arg("--shim-dir")
+        .arg(&shim_dir)
+        .arg("--json")
+        .output()
+        .unwrap();
+    assert!(second.status.success());
+    let second_json: serde_json::Value = serde_json::from_slice(&second.stdout).unwrap();
+    assert_eq!(second_json["path_added"], false);
+    assert_eq!(second_json["path_already_present"], true);
 }
 
 #[test]

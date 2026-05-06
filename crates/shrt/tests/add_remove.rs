@@ -128,3 +128,47 @@ fn name_validation_rejects_reserved_device_exits_64() {
         .unwrap();
     assert_eq!(output.status.code(), Some(64));
 }
+
+#[test]
+fn add_warns_when_target_not_on_path() {
+    let tmp = make_shim_dir();
+
+    let output = shrt(tmp.path())
+        .arg("add")
+        .arg("ghost")
+        .arg("definitelynotacommand_xyz_42 {1}")
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "add should succeed despite bad target");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("not found on PATH"),
+        "stderr missing target warning: {}",
+        stderr
+    );
+    assert!(
+        stderr.contains("--shell"),
+        "stderr missing --shell hint: {}",
+        stderr
+    );
+}
+
+#[test]
+fn add_with_shell_flag_skips_target_warning() {
+    let tmp = make_shim_dir();
+
+    let output = shrt(tmp.path())
+        .arg("add")
+        .arg("piper")
+        .arg("echo hello")
+        .arg("--shell")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        !stderr.contains("not found on PATH"),
+        "unexpected target warning under --shell: {}",
+        stderr
+    );
+}

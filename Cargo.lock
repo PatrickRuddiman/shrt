@@ -69,7 +69,7 @@ checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 
 [[package]]
 name = "argv-stub"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "autocfg"
@@ -594,7 +594,7 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "shrt"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -605,11 +605,13 @@ dependencies = [
  "tempfile",
  "toml",
  "which",
+ "windows-sys 0.59.0",
+ "winreg",
 ]
 
 [[package]]
 name = "shrt-runner"
-version = "0.1.0"
+version = "0.1.1"
 
 [[package]]
 name = "slab"
@@ -1055,6 +1057,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df79d97927682d2fd8adb29682d1140b343be4ac0f08fd68b7765d9c059d3945"
 dependencies = [
  "memchr",
+]
+
+[[package]]
+name = "winreg"
+version = "0.52.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a277a57398d4bfa075df44f501a17cfdf8542d224f0d36095a2adc7aee4ef0a5"
+dependencies = [
+ "cfg-if",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]

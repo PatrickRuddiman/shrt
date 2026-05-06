@@ -3,6 +3,7 @@ mod commands;
 mod config;
 mod paths;
 mod shim;
+mod win_path;
 
 use clap::Parser;
 use cli::{Cli, Commands, Ctx};

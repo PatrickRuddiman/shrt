@@ -1,6 +1,7 @@
 use crate::cli::Ctx;
 use crate::config::{self, Entry, SidecarConfig};
 use crate::paths;
+use crate::win_path;
 use serde::Serialize;
 use std::fs;
 use std::path::PathBuf;
@@ -14,6 +15,9 @@ pub struct InitReport {
     pub shim_dir: PathBuf,
     pub created: bool,
     pub on_path: bool,
+    pub path_added: bool,
+    pub path_already_present: bool,
+    pub path_error: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -98,10 +102,20 @@ pub fn init(ctx: &Ctx) -> anyhow::Result<InitReport> {
         })?;
         true
     };
+
+    let (path_added, path_already_present, path_error) =
+        match win_path::ensure_on_user_path(&ctx.shim_dir) {
+            Ok(change) => (change.added, change.already_present, None),
+            Err(e) => (false, false, Some(format!("{:#}", e))),
+        };
+
     Ok(InitReport {
         shim_dir: ctx.shim_dir.clone(),
         created,
         on_path: paths::is_on_path(&ctx.shim_dir),
+        path_added,
+        path_already_present,
+        path_error,
     })
 }
 
