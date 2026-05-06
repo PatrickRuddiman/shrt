@@ -1,5 +1,5 @@
 use crate::cli::Ctx;
-use crate::config::{self, SidecarConfig};
+use crate::config::{self, Entry, SidecarConfig};
 use crate::paths;
 use serde::Serialize;
 use std::fs;
@@ -27,6 +27,7 @@ pub struct PathReport {
 pub enum ShimError {
     Collision(String),
     Missing(String),
+    ParseError(PathBuf, anyhow::Error),
     Io(anyhow::Error),
 }
 
@@ -39,6 +40,7 @@ impl std::fmt::Display for ShimError {
                 name
             ),
             Self::Missing(name) => write!(f, "shim '{}' does not exist", name),
+            Self::ParseError(path, e) => write!(f, "{}: {:#}", path.display(), e),
             Self::Io(e) => write!(f, "{:#}", e),
         }
     }
@@ -51,6 +53,7 @@ impl ShimError {
         match self {
             Self::Collision(_) => 73,
             Self::Missing(_) => 66,
+            Self::ParseError(_, _) => 78,
             Self::Io(_) => 1,
         }
     }
@@ -143,6 +146,70 @@ pub fn add(
     }
 
     Ok(())
+}
+
+pub fn list(ctx: &Ctx) -> Result<Vec<Entry>, ShimError> {
+    let mut entries: Vec<Entry> = Vec::new();
+    if !ctx.shim_dir.is_dir() {
+        return Ok(entries);
+    }
+
+    let read_dir = fs::read_dir(&ctx.shim_dir).map_err(|e| {
+        ShimError::Io(anyhow::anyhow!(
+            "reading {}: {}",
+            ctx.shim_dir.display(),
+            e
+        ))
+    })?;
+
+    for dir_entry in read_dir {
+        let dir_entry = dir_entry
+            .map_err(|e| ShimError::Io(anyhow::anyhow!("reading dir entry: {}", e)))?;
+        let path = dir_entry.path();
+        let is_shrt = path
+            .extension()
+            .and_then(|s| s.to_str())
+            .map(|s| s.eq_ignore_ascii_case("shrt"))
+            .unwrap_or(false);
+        if !is_shrt {
+            continue;
+        }
+        let name = path
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .ok_or_else(|| {
+                ShimError::Io(anyhow::anyhow!("invalid filename: {}", path.display()))
+            })?
+            .to_string();
+        let cfg = config::read_sidecar(&path)
+            .map_err(|e| ShimError::ParseError(path.clone(), e))?;
+        entries.push(Entry { name, config: cfg });
+    }
+
+    entries.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(entries)
+}
+
+pub fn show(
+    ctx: &Ctx,
+    name: &str,
+) -> Result<(PathBuf, String, Entry), ShimError> {
+    let sidecar = ctx.shim_dir.join(format!("{}.shrt", name));
+    if !sidecar.exists() {
+        return Err(ShimError::Missing(name.to_string()));
+    }
+
+    let raw = fs::read_to_string(&sidecar).map_err(|e| {
+        ShimError::Io(anyhow::anyhow!("reading {}: {}", sidecar.display(), e))
+    })?;
+    let cfg: SidecarConfig = toml::from_str(&raw).map_err(|e| {
+        ShimError::ParseError(sidecar.clone(), anyhow::anyhow!("{}", e))
+    })?;
+    let entry = Entry {
+        name: name.to_string(),
+        config: cfg,
+    };
+    Ok((sidecar, raw, entry))
 }
 
 pub fn remove(ctx: &Ctx, name: &str) -> Result<(), ShimError> {
