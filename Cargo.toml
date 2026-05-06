@@ -1,0 +1,21 @@
+[workspace]
+members = ["crates/*"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Patrick Ruddiman"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/PatrickRuddiman/shrt"
+homepage = "https://github.com/PatrickRuddiman/shrt"
+description = "Parameterized command shortcuts for Windows."
+keywords = ["windows", "cli", "shim", "alias", "shortcut"]
+categories = ["command-line-utilities", "development-tools"]
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
