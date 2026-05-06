@@ -31,6 +31,28 @@ pub struct SyncReport {
     pub errors: Vec<(String, String)>,
 }
 
+#[derive(Debug, Clone, Copy, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Status {
+    Ok,
+    Warn,
+    Fail,
+}
+
+#[derive(Debug, Serialize)]
+pub struct Check {
+    pub name: String,
+    pub status: Status,
+    pub message: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub struct DoctorReport {
+    pub summary: Status,
+    pub checks: Vec<Check>,
+}
+
 #[derive(Debug)]
 pub enum ShimError {
     Collision(String),
@@ -296,6 +318,120 @@ pub fn sync(ctx: &Ctx) -> Result<SyncReport, ShimError> {
         total,
         errors,
     })
+}
+
+pub fn doctor(ctx: &Ctx) -> anyhow::Result<DoctorReport> {
+    let mut checks: Vec<Check> = Vec::new();
+
+    let on_path = paths::is_on_path(&ctx.shim_dir);
+    checks.push(Check {
+        name: "path".to_string(),
+        status: if on_path { Status::Ok } else { Status::Warn },
+        message: if on_path {
+            format!("{} is on PATH", ctx.shim_dir.display())
+        } else {
+            format!(
+                "{} is not on PATH; run `shrt init` for instructions",
+                ctx.shim_dir.display()
+            )
+        },
+    });
+
+    if ctx.shim_dir.is_dir() {
+        let read_dir = fs::read_dir(&ctx.shim_dir).map_err(|e| {
+            anyhow::anyhow!("reading {}: {}", ctx.shim_dir.display(), e)
+        })?;
+        let mut names: Vec<String> = Vec::new();
+        for entry in read_dir {
+            let entry = entry
+                .map_err(|e| anyhow::anyhow!("reading dir entry: {}", e))?;
+            let path = entry.path();
+            let is_shrt = path
+                .extension()
+                .and_then(|s| s.to_str())
+                .map(|s| s.eq_ignore_ascii_case("shrt"))
+                .unwrap_or(false);
+            if is_shrt {
+                if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                    names.push(stem.to_string());
+                }
+            }
+        }
+        names.sort();
+
+        for name in &names {
+            let sidecar = ctx.shim_dir.join(format!("{}.shrt", name));
+            let parse_result = config::read_sidecar(&sidecar);
+
+            match &parse_result {
+                Ok(_) => checks.push(Check {
+                    name: format!("{}: parse", name),
+                    status: Status::Ok,
+                    message: "sidecar parses".to_string(),
+                }),
+                Err(e) => checks.push(Check {
+                    name: format!("{}: parse", name),
+                    status: Status::Fail,
+                    message: format!("{:#}", e),
+                }),
+            }
+
+            let exe = ctx.shim_dir.join(format!("{}.exe", name));
+            let (bytes_status, bytes_msg) = if !exe.exists() {
+                (Status::Fail, "missing .exe".to_string())
+            } else {
+                match fs::read(&exe) {
+                    Ok(b) if b == ctx.runner_bytes => {
+                        (Status::Ok, "byte-equal to embedded runner".to_string())
+                    }
+                    Ok(_) => (
+                        Status::Fail,
+                        "byte mismatch with embedded runner; run `shrt sync`"
+                            .to_string(),
+                    ),
+                    Err(e) => (Status::Fail, format!("reading {}: {}", exe.display(), e)),
+                }
+            };
+            checks.push(Check {
+                name: format!("{}: bytes", name),
+                status: bytes_status,
+                message: bytes_msg,
+            });
+
+            if let Ok(cfg) = parse_result {
+                let (target_status, target_msg) = match which::which(&cfg.target) {
+                    Ok(p) => (Status::Ok, format!("resolves to {}", p.display())),
+                    Err(e) => (
+                        Status::Fail,
+                        format!("'{}' not found: {}", cfg.target, e),
+                    ),
+                };
+                checks.push(Check {
+                    name: format!("{}: target", name),
+                    status: target_status,
+                    message: target_msg,
+                });
+            }
+        }
+    }
+
+    checks.push(Check {
+        name: "acls".to_string(),
+        status: Status::Warn,
+        message: "Windows user-only ACLs deferred to v0.2".to_string(),
+    });
+
+    let any_fail = checks.iter().any(|c| matches!(c.status, Status::Fail));
+    let any_warn = checks.iter().any(|c| matches!(c.status, Status::Warn));
+    let summary = if any_fail {
+        Status::Fail
+    } else if any_warn {
+        Status::Warn
+    } else {
+        Status::Ok
+    };
+
+    Ok(DoctorReport { summary, checks })
 }
 
 pub fn remove(ctx: &Ctx, name: &str) -> Result<(), ShimError> {
