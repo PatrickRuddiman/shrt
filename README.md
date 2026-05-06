@@ -19,7 +19,7 @@ shrt init
 
 ### Scoop
 
-Once the the bucket is added:
+Once the bucket is added:
 
 ```
 scoop bucket add patrickruddiman https://github.com/PatrickRuddiman/PersonalScoopBucket
