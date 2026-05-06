@@ -1,0 +1,3 @@
+mod sidecar;
+
+fn main() {}
