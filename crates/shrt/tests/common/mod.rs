@@ -18,16 +18,17 @@ pub fn stub_path() -> &'static Path {
             .join("debug")
             .join("argv-stub.exe");
 
-        if !stub_bin.exists() {
-            let status = Command::new(&cargo)
-                .arg("build")
-                .arg("-p")
-                .arg("argv-stub")
-                .current_dir(workspace_root)
-                .status()
-                .expect("failed to spawn cargo to build argv-stub");
-            assert!(status.success(), "argv-stub build failed");
-        }
+        // Always invoke cargo build — cargo's incremental compilation
+        // makes this a near-no-op when sources are unchanged, and avoids
+        // serving a stale binary if argv-stub source changes.
+        let status = Command::new(&cargo)
+            .arg("build")
+            .arg("-p")
+            .arg("argv-stub")
+            .current_dir(workspace_root)
+            .status()
+            .expect("failed to spawn cargo to build argv-stub");
+        assert!(status.success(), "argv-stub build failed");
 
         assert!(
             stub_bin.exists(),

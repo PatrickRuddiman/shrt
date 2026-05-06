@@ -19,6 +19,10 @@ fn main() {
         None
     };
 
+    if let Ok(stderr_msg) = env::var("WRITE_STDERR") {
+        let _ = writeln!(io::stderr(), "{}", stderr_msg);
+    }
+
     let mut out = String::from("{\"argv\":");
     out.push_str(&render_array(&argv));
     if let Some(s) = &stdin_capture {
