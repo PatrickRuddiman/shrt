@@ -13,7 +13,7 @@ Establish the Cargo workspace (manifest, profile, toolchain pin, licenses, gitig
 - [x] In the same `Cargo.toml`, add `[profile.release]` with `opt-level = "z"`, `lto = true`, `codegen-units = 1`, `panic = "abort"`, `strip = "symbols"` per `slices/build-pipeline.md` §3 Decision 6.
 - [x] Create `rust-toolchain.toml` (repo root) with `[toolchain]` `channel = "stable"`.
 - [x] Create `LICENSE-MIT` and `LICENSE-APACHE` (repo root) with the standard texts.
-- [x] Create `.gitignore` (repo root) listing at least `target/` and `crates/shrt/runner-src/` (the publish-time bundle directory must not be committed per `slices/distribution.md` §3 Decision 2).
+- [x] Create `.gitignore` (repo root) listing at least `target/`.
 - [x] Create `crates/argv-stub/Cargo.toml`: `[package] name = "argv-stub"`, `version.workspace = true`, `edition.workspace = true`, `license.workspace = true`, `publish = false`. `[[bin]] name = "argv-stub"`. No `[dependencies]`.
 - [x] Create `crates/argv-stub/src/main.rs`: read `EXIT_CODE` env (parse i32, default 0); read `READ_STDIN` env, when `1` slurp stdin to a `String`; emit JSON with `argv` from `args().skip(1)` and optional `stdin` field; hand-roll the JSON output (no `serde_json`); call `std::process::exit(code)`.
 - [x] Add `#[cfg(test)] mod tests` in `crates/argv-stub/src/main.rs` with at least: a JSON-escape test for special characters (`"`, `\`, `\n`), a test that empty args produces `{"argv":[]}`.

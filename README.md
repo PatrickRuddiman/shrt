@@ -10,20 +10,22 @@ PowerShell aliases can't accept parameters. PowerShell functions can, but they'r
 
 ## Install
 
-### Cargo
-
-```
-cargo install shrt
-shrt init
-```
-
-### Scoop
-
-Once the bucket is added:
+### Scoop (recommended)
 
 ```
 scoop bucket add patrickruddiman https://github.com/PatrickRuddiman/PersonalScoopBucket
 scoop install shrt
+shrt init
+```
+
+### Direct download
+
+Grab `shrt-vX.Y.Z-x86_64-pc-windows-msvc.exe` (or the ARM64 build) from the [Releases page](https://github.com/PatrickRuddiman/shrt/releases), rename it to `shrt.exe`, drop it on your PATH, and run `shrt init`.
+
+### From source
+
+```
+cargo install --git https://github.com/PatrickRuddiman/shrt --locked shrt
 shrt init
 ```
 
@@ -108,7 +110,7 @@ For a permanent change in PowerShell, add the line to your `$PROFILE`. In Window
 ### After upgrading `shrt`
 
 ```
-cargo install shrt --force
+scoop update shrt    # or re-download from Releases / re-run cargo install --git ... --force
 shrt sync
 ```
 

@@ -668,11 +668,11 @@ The full `shrt` CLI uses the real `toml` crate for writing and validation, so an
 
 
 
-\- \*\*crates.io:\*\* `cargo install shrt` (primary developer install)
-
 \- \*\*Scoop:\*\* maintain a project bucket initially, request inclusion in `extras` once stable
 
 \- \*\*GitHub Releases:\*\* prebuilt `shrt.exe` for `x86\_64-pc-windows-msvc` and `aarch64-pc-windows-msvc`
+
+\- \*\*Source:\*\* `cargo install --git https://github.com/PatrickRuddiman/shrt --locked shrt` for users who want to build locally
 
 \- \*\*winget:\*\* add manifest once 1.0 ships
 
@@ -854,7 +854,7 @@ The first usable release must:
 
 \- \[x] Run on Windows 10+ and Windows 11, both x64 and ARM64
 
-\- \[x] Ship via `cargo install` with no extra setup
+\- \[x] Ship via Scoop and GitHub Releases with no extra setup
 
 \- \[x] Runner binary under 300 KB stripped
 

@@ -12,7 +12,7 @@ Author the GitHub Actions CI workflow that builds and tests the workspace on PR/
 - [x] Create `.github/workflows/ci.yml` with `name: ci`. Triggers: `on: { push: { branches: [main] }, pull_request: {} }`.
 - [x] Add a single job `test` with `strategy.fail-fast: false` and `matrix.os: [windows-latest, windows-11-arm]`. `runs-on: ${{ matrix.os }}`.
 - [x] Steps in the `test` job: `actions/checkout@v4`; install stable Rust via `dtolnay/rust-toolchain@stable` (or equivalent action that respects `rust-toolchain.toml`); cache cargo via `Swatinem/rust-cache@v2`; run `cargo test --workspace --locked`.
-- [x] Do NOT include any release-asset upload, crates.io publish, or Scoop manifest steps — those belong to task 16's release workflow.
+- [x] Do NOT include any release-asset upload or Scoop manifest steps — those belong to task 16's release workflow.
 - [x] Verify the workflow's local equivalent passes by running `cargo test --workspace --locked` from the repo root before marking this task done.
 
 ## Acceptance criteria

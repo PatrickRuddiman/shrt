@@ -9,7 +9,6 @@ homepage.workspace = true
 description.workspace = true
 keywords.workspace = true
 categories.workspace = true
-include = ["src/**", "build.rs", "runner-src/**", "Cargo.toml", "../../README.md"]
 
 [[bin]]
 name = "shrt"
@@ -27,8 +26,3 @@ chrono = { version = "0.4", default-features = false, features = ["clock"] }
 
 [dev-dependencies]
 tempfile = "3"
-
-[package.metadata.binstall]
-pkg-url = "{ repo }/releases/download/v{ version }/shrt-v{ version }-{ target }.exe"
-bin-dir = ""
-pkg-fmt = "bin"

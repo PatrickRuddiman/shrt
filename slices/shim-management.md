@@ -136,7 +136,7 @@ Status      { Ok, Warn, Fail }   // serializable as lowercase string in JSON
 - Argument parsing, output formatting, JSON shape rendering. Owned by `cli-surface`.
 - The runner's reader code, escape decoding, and version-mismatch handling. Owned by `runner` and `sidecar-format`.
 - Generation of the embedded runner binary. Owned by `build-pipeline`.
-- Publishing logistics (crates.io single-crate fetch, Scoop manifest, GitHub Releases). Owned by `distribution`.
+- Publishing logistics (Scoop manifest, GitHub Releases). Owned by `distribution`.
 - Tab-completion script writing during `init`. Spec §12 question 4; deferred to v0.2.
 - Concurrent-process file locking. Spec §10.1 excludes the use case.
 - Windows ACL setting on sidecar files. Decision 5; deferred to v0.2.

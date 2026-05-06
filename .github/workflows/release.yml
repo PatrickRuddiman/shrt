@@ -61,19 +61,3 @@ jobs:
             --title "${{ github.ref_name }}" \
             --notes "Automated release for ${{ github.ref_name }}" \
             release/*
-
-  publish-crates:
-    runs-on: windows-latest
-    needs: release
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: cargo publish shrt-runner
-        run: cargo publish -p shrt-runner --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
-      - name: Bundle runner sources into shrt
-        shell: pwsh
-        run: pwsh scripts/bundle-runner-src.ps1
-      - name: cargo publish shrt
-        run: cargo publish -p shrt --token ${{ secrets.CARGO_REGISTRY_TOKEN }}
-

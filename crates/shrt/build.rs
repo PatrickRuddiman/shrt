@@ -8,19 +8,13 @@ fn main() {
     let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR"));
     let cargo = env::var("CARGO").unwrap_or_else(|_| "cargo".to_string());
 
-    let bundled = manifest_dir.join("runner-src/Cargo.toml");
-    let workspace = manifest_dir.join("../shrt-runner/Cargo.toml");
-    let (manifest, is_bundled) = if bundled.exists() {
-        (bundled, true)
-    } else if workspace.exists() {
-        (workspace, false)
-    } else {
+    let manifest = manifest_dir.join("../shrt-runner/Cargo.toml");
+    if !manifest.exists() {
         panic!(
-            "shrt-runner manifest not found at runner-src/Cargo.toml or ../shrt-runner/Cargo.toml \
-             relative to {}",
-            manifest_dir.display()
+            "shrt-runner manifest not found at {} (workspace member is required)",
+            manifest.display()
         );
-    };
+    }
 
     let target_dir = out_dir.join("runner-target");
 
@@ -54,11 +48,7 @@ fn main() {
         )
     });
 
-    if is_bundled {
-        println!("cargo:rerun-if-changed=runner-src");
-    } else {
-        println!("cargo:rerun-if-changed=../shrt-runner/src");
-        println!("cargo:rerun-if-changed=../shrt-runner/Cargo.toml");
-        println!("cargo:rerun-if-changed=../../Cargo.lock");
-    }
+    println!("cargo:rerun-if-changed=../shrt-runner/src");
+    println!("cargo:rerun-if-changed=../shrt-runner/Cargo.toml");
+    println!("cargo:rerun-if-changed=../../Cargo.lock");
 }
