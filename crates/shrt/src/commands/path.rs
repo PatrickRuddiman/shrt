@@ -1,5 +1,14 @@
 use crate::cli::Ctx;
+use crate::shim;
 
-pub fn run(_ctx: &Ctx) -> anyhow::Result<i32> {
-    anyhow::bail!("`shrt path` not implemented yet (task 09)")
+pub fn run(ctx: &Ctx) -> anyhow::Result<i32> {
+    let report = shim::path_report(ctx);
+
+    if ctx.json {
+        println!("{}", serde_json::to_string_pretty(&report)?);
+    } else {
+        println!("{}", report.path.display());
+    }
+
+    Ok(0)
 }
