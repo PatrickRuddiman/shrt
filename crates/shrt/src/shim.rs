@@ -23,6 +23,14 @@ pub struct PathReport {
     pub on_path: bool,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub struct SyncReport {
+    pub updated: usize,
+    pub total: usize,
+    pub errors: Vec<(String, String)>,
+}
+
 #[derive(Debug)]
 pub enum ShimError {
     Collision(String),
@@ -210,6 +218,84 @@ pub fn show(
         config: cfg,
     };
     Ok((sidecar, raw, entry))
+}
+
+pub fn sync(ctx: &Ctx) -> Result<SyncReport, ShimError> {
+    let mut updated = 0usize;
+    let mut total = 0usize;
+    let mut errors: Vec<(String, String)> = Vec::new();
+
+    if !ctx.shim_dir.is_dir() {
+        return Ok(SyncReport {
+            updated,
+            total,
+            errors,
+        });
+    }
+
+    let read_dir = fs::read_dir(&ctx.shim_dir).map_err(|e| {
+        ShimError::Io(anyhow::anyhow!(
+            "reading {}: {}",
+            ctx.shim_dir.display(),
+            e
+        ))
+    })?;
+
+    for dir_entry in read_dir {
+        let dir_entry = dir_entry
+            .map_err(|e| ShimError::Io(anyhow::anyhow!("reading dir entry: {}", e)))?;
+        let path = dir_entry.path();
+        let is_shrt = path
+            .extension()
+            .and_then(|s| s.to_str())
+            .map(|s| s.eq_ignore_ascii_case("shrt"))
+            .unwrap_or(false);
+        if !is_shrt {
+            continue;
+        }
+        let name = match path.file_stem().and_then(|s| s.to_str()) {
+            Some(s) => s.to_string(),
+            None => continue,
+        };
+
+        total += 1;
+        let exe = ctx.shim_dir.join(format!("{}.exe", name));
+
+        if !exe.exists() {
+            errors.push((name, "missing .exe".to_string()));
+            continue;
+        }
+
+        let current = match fs::read(&exe) {
+            Ok(b) => b,
+            Err(e) => {
+                errors.push((name, format!("reading {}: {}", exe.display(), e)));
+                continue;
+            }
+        };
+
+        if current == ctx.runner_bytes {
+            continue;
+        }
+
+        let exe_tmp = ctx.shim_dir.join(format!("{}.exe.tmp", name));
+        if let Err(e) = fs::write(&exe_tmp, ctx.runner_bytes) {
+            errors.push((name, format!("writing {}: {}", exe_tmp.display(), e)));
+            continue;
+        }
+        if let Err(e) = fs::rename(&exe_tmp, &exe) {
+            let _ = fs::remove_file(&exe_tmp);
+            errors.push((name, format!("renaming exe: {}", e)));
+            continue;
+        }
+        updated += 1;
+    }
+
+    Ok(SyncReport {
+        updated,
+        total,
+        errors,
+    })
 }
 
 pub fn remove(ctx: &Ctx, name: &str) -> Result<(), ShimError> {
