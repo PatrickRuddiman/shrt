@@ -72,7 +72,7 @@ pub fn write_sidecar(path: &Path, cfg: &SidecarConfig) -> Result<()> {
     Ok(())
 }
 
-fn serialize_sidecar(cfg: &SidecarConfig) -> Result<String> {
+pub(crate) fn serialize_sidecar(cfg: &SidecarConfig) -> Result<String> {
     let mut out = String::new();
     out.push_str("target = ");
     out.push_str(&escape_basic(&cfg.target)?);
