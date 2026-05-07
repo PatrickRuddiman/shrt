@@ -29,28 +29,28 @@ cargo install --git https://github.com/PatrickRuddiman/shrt --locked shrt
 shrt init
 ```
 
-`shrt init` creates `~/.shrt/bin` (the shim directory) and prints instructions for adding it to PATH. Restart your shell after updating PATH.
+`shrt init` creates `~/.shrt/bin` (the shim directory) and adds it to your user PATH (`HKCU\Environment\Path`) automatically. **Open a new shell** for the PATH change to take effect.
 
 ## Quickstart
 
 Suppose you frequently invoke a tool with a long template prefix and want a one-word shortcut:
 
 ```
-shrt add wt "copilot -p '/worktree create a worktree for {1}' --yolo"
+shrt add worktree 'copilot -p "/worktree create a worktree for {1}" --yolo'
 ```
 
 This produces:
 
 ```
 ~/.shrt/bin/
-├── wt.exe        # bytes-identical copy of the embedded runner
-└── wt.shrt       # TOML sidecar describing the template
+├── worktree.exe        # bytes-identical copy of the embedded runner
+└── worktree.shrt       # TOML sidecar describing the template
 ```
 
 Now from anywhere on PATH:
 
 ```
-wt "ado item 37839929"
+worktree "ado item 37839929"
 ```
 
 resolves to:
@@ -59,11 +59,13 @@ resolves to:
 copilot -p "/worktree create a worktree for ado item 37839929" --yolo
 ```
 
+> **Quoting note**: use *double* quotes inside the template body to keep multi-word arguments grouped. The runner's argv tokenizer follows Microsoft's CRT rules, where only `"` is special — single quotes are literal characters and won't preserve argument boundaries. From PowerShell, wrap the whole `shrt add` template in single quotes (as shown above) so the inner double quotes pass through.
+
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `shrt init` | Create `~/.shrt/bin`; report whether it's on PATH. |
+| `shrt init` | Create `~/.shrt/bin`; auto-add it to user PATH; report status. |
 | `shrt add <name> <template>` | Create a new shim. First whitespace-delimited token of `<template>` is the target unless `--target` overrides. |
 | `shrt remove <name>` | Delete `<name>.exe` and `<name>.shrt`. |
 | `shrt list [--verbose]` | Print all shims, sorted alphabetically. |
@@ -73,6 +75,11 @@ copilot -p "/worktree create a worktree for ado item 37839929" --yolo
 | `shrt doctor` | Diagnose the shim setup. |
 
 Global flags: `--shim-dir <path>` (also via `SHRT_DIR` env), `--quiet`, `--json`.
+
+`shrt add` also runs two safety checks:
+
+- **Target on PATH.** If the named target binary doesn't resolve via PATH+PATHEXT (and you didn't pass `--shell`), it warns to stderr suggesting `--shell` for shell builtins (`echo`, `dir`, `cd`, `set`) or `--target` for a full path. The shim is still created.
+- **Shim name not shadowed.** If the chosen shim name already resolves to a different binary on PATH (e.g. `wt` → Windows Terminal), the add fails with exit 64 — your shim would never be invoked. Pick a different name or remove the shadowing binary.
 
 ## Placeholder reference
 
@@ -92,20 +99,36 @@ When the resulting command line is split into argv (the default, `shell = false`
 
 ## Troubleshooting
 
-### Shim dir not on PATH
+### After `shrt init`, my shim still isn't found
 
-After `shrt init`, you may see:
+`shrt init` writes `~/.shrt/bin` to your **user** PATH in the registry, but **already-running shells don't pick up environment changes** — that's a Windows fundamental, not a `shrt` quirk. Open a new shell tab/window and the dir will be on PATH. `shrt init` is idempotent so it's safe to re-run.
+
+If you need to add it manually (rare — auto-add fails only on locked-down machines / group policy):
 
 ```
-on PATH: false
-
-Add the shim directory to PATH so its shims become invocable:
-  PowerShell: $env:PATH = "$env:PATH;C:\Users\you\.shrt\bin"
-  cmd.exe:    set PATH=%PATH%;C:\Users\you\.shrt\bin
-  Git Bash:   export PATH="$PATH:C:\Users\you\.shrt\bin"
+PowerShell: $env:PATH = "$env:PATH;C:\Users\you\.shrt\bin"
+cmd.exe:    set PATH=%PATH%;C:\Users\you\.shrt\bin
+Git Bash:   export PATH="$PATH:C:\Users\you\.shrt\bin"
 ```
 
-For a permanent change in PowerShell, add the line to your `$PROFILE`. In Windows GUI: System Properties → Environment Variables → edit `Path`.
+For a permanent fallback: add to `$PROFILE`, or in the Windows GUI go to System Properties → Environment Variables → edit `Path`.
+
+### `shrt add` says "shim name … is shadowed by an existing binary"
+
+The shell would resolve `<name>` to that existing binary first, never reaching your shim. Common shadowers on Win11:
+
+- **Windows App Execution Aliases**: `wt`, `python`, `winget`, etc., living in `%LocalAppData%\Microsoft\WindowsApps`. Disable in Settings → Apps → Advanced app settings → App execution aliases, then re-run `shrt add`.
+- **Pre-existing tools** earlier in PATH. Either uninstall them or pick a different shim name.
+
+`Get-Command <name> -All` shows every PATH entry that matches the name; the first one wins.
+
+### `shrt add` warns "target … not found on PATH"
+
+Either the target binary isn't installed yet (the shim is still created — install it later and the shim works), or the target is a shell builtin like `echo`/`dir`/`cd`/`set`. For a builtin, re-run with `--shell` so the runner pipes through `cmd /c`:
+
+```
+shrt add say 'echo {1}' --shell --force
+```
 
 ### After upgrading `shrt`
 
@@ -122,7 +145,7 @@ shrt sync
 shrt doctor
 ```
 
-Runs four per-shim checks: sidecar parses, `.exe` bytes match the embedded runner, target binary resolves on PATH. Use `shrt doctor --json` for machine-readable output.
+Runs four per-shim checks: sidecar parses, `.exe` bytes match the embedded runner, target binary resolves on PATH, plus a PATH-membership check. Use `shrt doctor --json` for machine-readable output.
 
 ### Exit codes
 
@@ -130,11 +153,11 @@ Runs four per-shim checks: sidecar parses, `.exe` bytes match the embedded runne
 |---|---|
 | 0 | Success |
 | 1 | Generic error |
-| 64 | Usage error: invalid shim name, missing required `{N}` placeholder |
+| 64 | Usage error: invalid shim name, shim name shadowed by existing PATH binary, missing required `{N}` placeholder at runtime, control char in template/cwd/description |
 | 66 | Missing input: sidecar absent for `show` / `remove` / runner |
 | 73 | Cannot create output: shim dir not writable, name collision without `--force` |
 | 78 | Config error: sidecar parse failure, version mismatch, `{ENV:NAME}` not set |
-| 127 | Target command not found on PATH |
+| 127 | Target command not found on PATH at runtime |
 
 ## License
 
