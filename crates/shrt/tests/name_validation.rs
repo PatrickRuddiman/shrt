@@ -35,7 +35,7 @@ fn rejects_reserved_devices() {
 #[test]
 fn accepts_alphanumeric_with_underscore_hyphen_dot() {
     let tmp = make_shim_dir();
-    for name in &["wt", "wt0_0", "foo-bar", "a.b.c"] {
+    for name in &["wt0", "wt0_0", "foo-bar", "a.b.c"] {
         let out = try_add(tmp.path(), name);
         assert!(
             out.status.success(),

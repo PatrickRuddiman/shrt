@@ -69,7 +69,7 @@ checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 
 [[package]]
 name = "argv-stub"
-version = "0.1.1"
+version = "0.1.2"
 
 [[package]]
 name = "autocfg"
@@ -594,7 +594,7 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
 name = "shrt"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -611,7 +611,7 @@ dependencies = [
 
 [[package]]
 name = "shrt-runner"
-version = "0.1.1"
+version = "0.1.2"
 
 [[package]]
 name = "slab"

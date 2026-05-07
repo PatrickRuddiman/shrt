@@ -4,7 +4,7 @@ use common::*;
 #[test]
 fn sync_skips_unchanged_shims() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{1}", false);
+    add_stub_shim(tmp.path(), "wt0", "{1}", false);
 
     let output = shrt(tmp.path()).arg("sync").arg("--json").output().unwrap();
     assert!(output.status.success());
@@ -17,8 +17,8 @@ fn sync_skips_unchanged_shims() {
 #[test]
 fn sync_restores_modified_shim_bytes() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{1}", false);
-    let exe = tmp.path().join("wt.exe");
+    add_stub_shim(tmp.path(), "wt0", "{1}", false);
+    let exe = tmp.path().join("wt0.exe");
     let original = std::fs::read(&exe).unwrap();
 
     std::fs::write(&exe, b"junk-bytes-not-runner").unwrap();
@@ -38,7 +38,7 @@ fn sync_restores_modified_shim_bytes() {
 #[test]
 fn sync_json_shape() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{1}", false);
+    add_stub_shim(tmp.path(), "wt0", "{1}", false);
 
     let output = shrt(tmp.path()).arg("sync").arg("--json").output().unwrap();
     assert!(output.status.success());
@@ -52,14 +52,14 @@ fn sync_json_shape() {
 #[test]
 fn sync_handles_missing_exe() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{1}", false);
-    std::fs::remove_file(tmp.path().join("wt.exe")).unwrap();
+    add_stub_shim(tmp.path(), "wt0", "{1}", false);
+    std::fs::remove_file(tmp.path().join("wt0.exe")).unwrap();
 
     let output = shrt(tmp.path()).arg("sync").arg("--json").output().unwrap();
     let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     let errors = report["errors"].as_array().unwrap();
     assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0][0], "wt");
+    assert_eq!(errors[0][0], "wt0");
     // Every shim failed -> exit 1
     assert_eq!(output.status.code(), Some(1));
 }
@@ -67,7 +67,7 @@ fn sync_handles_missing_exe() {
 #[test]
 fn sync_text_mode_prints_summary() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{1}", false);
+    add_stub_shim(tmp.path(), "wt0", "{1}", false);
 
     let output = shrt(tmp.path()).arg("sync").output().unwrap();
     assert!(output.status.success());

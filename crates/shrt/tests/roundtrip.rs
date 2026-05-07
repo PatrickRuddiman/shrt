@@ -8,7 +8,7 @@ fn emoji_in_description_round_trips() {
 
     let status = shrt(tmp.path())
         .arg("add")
-        .arg("wt")
+        .arg("wt0")
         .arg(format!("{} t", stub))
         .arg("--desc")
         .arg("🎉 hello")
@@ -28,7 +28,7 @@ fn newline_in_description_round_trips() {
 
     let status = shrt(tmp.path())
         .arg("add")
-        .arg("wt")
+        .arg("wt0")
         .arg(format!("{} t", stub))
         .arg("--desc")
         .arg("line1\nline2")
@@ -44,14 +44,14 @@ fn newline_in_description_round_trips() {
 #[test]
 fn unknown_key_warns_but_shim_runs() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{1}", false);
+    add_stub_shim(tmp.path(), "wt0", "{1}", false);
 
-    let sidecar = tmp.path().join("wt.shrt");
+    let sidecar = tmp.path().join("wt0.shrt");
     let original = std::fs::read_to_string(&sidecar).unwrap();
     let with_unknown = format!("mystery = \"x\"\n{}", original);
     std::fs::write(&sidecar, with_unknown).unwrap();
 
-    let output = invoke_shim(tmp.path(), "wt", &["arg1"], &[]);
+    let output = invoke_shim(tmp.path(), "wt0", &["arg1"], &[]);
     assert!(
         output.status.success(),
         "expected shim to run despite unknown key; stderr: {}",

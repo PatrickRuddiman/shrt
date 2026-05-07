@@ -6,9 +6,9 @@ use std::process::{Command, Stdio};
 #[test]
 fn add_then_invoke_passes_argv_correctly() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{1} {2}", false);
+    add_stub_shim(tmp.path(), "wt0", "{1} {2}", false);
 
-    let output = invoke_shim(tmp.path(), "wt", &["foo", "bar"], &[]);
+    let output = invoke_shim(tmp.path(), "wt0", &["foo", "bar"], &[]);
     assert!(output.status.success());
     let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(json["argv"], serde_json::json!(["foo", "bar"]));
@@ -17,9 +17,9 @@ fn add_then_invoke_passes_argv_correctly() {
 #[test]
 fn placeholder_input_joins_with_single_space() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{INPUT}", false);
+    add_stub_shim(tmp.path(), "wt0", "{INPUT}", false);
 
-    let output = invoke_shim(tmp.path(), "wt", &["a", "b", "c"], &[]);
+    let output = invoke_shim(tmp.path(), "wt0", &["a", "b", "c"], &[]);
     assert!(output.status.success());
     let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     // {INPUT} produces "a b c"; tokenizer then splits on whitespace.
@@ -29,9 +29,9 @@ fn placeholder_input_joins_with_single_space() {
 #[test]
 fn placeholder_at_preserves_arg_boundaries() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{@}", false);
+    add_stub_shim(tmp.path(), "wt0", "{@}", false);
 
-    let output = invoke_shim(tmp.path(), "wt", &["a b", "c"], &[]);
+    let output = invoke_shim(tmp.path(), "wt0", &["a b", "c"], &[]);
     assert!(output.status.success());
     let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(json["argv"], serde_json::json!(["a b", "c"]));
@@ -40,11 +40,11 @@ fn placeholder_at_preserves_arg_boundaries() {
 #[test]
 fn placeholder_env_substitutes_env_value() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{ENV:SHRT_TEST_GREETING}", false);
+    add_stub_shim(tmp.path(), "wt0", "{ENV:SHRT_TEST_GREETING}", false);
 
     let output = invoke_shim(
         tmp.path(),
-        "wt",
+        "wt0",
         &[],
         &[("SHRT_TEST_GREETING", "hello")],
     );
@@ -58,12 +58,12 @@ fn placeholder_env_default_used_when_unset() {
     let tmp = make_shim_dir();
     add_stub_shim(
         tmp.path(),
-        "wt",
+        "wt0",
         "{ENV:SHRT_NEVERSET_VAR_XYZ:fallback}",
         false,
     );
 
-    let output = invoke_shim(tmp.path(), "wt", &[], &[]);
+    let output = invoke_shim(tmp.path(), "wt0", &[], &[]);
     assert!(output.status.success());
     let json: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     assert_eq!(json["argv"], serde_json::json!(["fallback"]));
@@ -99,18 +99,18 @@ fn shell_true_supports_pipes() {
 #[test]
 fn child_exit_code_propagates() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "", false);
+    add_stub_shim(tmp.path(), "wt0", "", false);
 
-    let output = invoke_shim(tmp.path(), "wt", &[], &[("EXIT_CODE", "42")]);
+    let output = invoke_shim(tmp.path(), "wt0", &[], &[("EXIT_CODE", "42")]);
     assert_eq!(output.status.code(), Some(42));
 }
 
 #[test]
 fn stdin_passthrough_works() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "", false);
+    add_stub_shim(tmp.path(), "wt0", "", false);
 
-    let exe = tmp.path().join("wt.exe");
+    let exe = tmp.path().join("wt0.exe");
     let mut cmd = Command::new(&exe);
     cmd.env("READ_STDIN", "1");
     cmd.stdin(Stdio::piped());
@@ -135,9 +135,9 @@ fn stdin_passthrough_works() {
 #[test]
 fn stdout_passthrough_works() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{1}", false);
+    add_stub_shim(tmp.path(), "wt0", "{1}", false);
 
-    let output = invoke_shim(tmp.path(), "wt", &["x"], &[]);
+    let output = invoke_shim(tmp.path(), "wt0", &["x"], &[]);
     assert!(output.status.success());
     assert!(
         output.stdout.starts_with(b"{"),
@@ -149,9 +149,9 @@ fn stdout_passthrough_works() {
 #[test]
 fn stderr_passthrough_works() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{1}", false);
+    add_stub_shim(tmp.path(), "wt0", "{1}", false);
 
-    let output = invoke_shim(tmp.path(), "wt", &["x"], &[("WRITE_STDERR", "uh oh")]);
+    let output = invoke_shim(tmp.path(), "wt0", &["x"], &[("WRITE_STDERR", "uh oh")]);
     assert!(output.status.success());
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("uh oh"), "stderr: {}", stderr);

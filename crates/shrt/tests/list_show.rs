@@ -13,7 +13,7 @@ fn list_empty_when_no_shims() {
 #[test]
 fn list_default_sorted_alphabetically() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{1}", false);
+    add_stub_shim(tmp.path(), "wt0", "{1}", false);
     add_stub_shim(tmp.path(), "abc", "test", false);
 
     let output = shrt(tmp.path()).arg("list").output().unwrap();
@@ -21,7 +21,7 @@ fn list_default_sorted_alphabetically() {
     let stdout = String::from_utf8_lossy(&output.stdout);
 
     let abc_pos = stdout.find("abc").expect("abc not in output");
-    let wt_pos = stdout.find("wt").expect("wt not in output");
+    let wt_pos = stdout.find("wt0").expect("wt not in output");
     assert!(
         abc_pos < wt_pos,
         "expected alphabetical order, got: {}",
@@ -32,7 +32,7 @@ fn list_default_sorted_alphabetically() {
 #[test]
 fn list_verbose_includes_template_and_target() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{1}", false);
+    add_stub_shim(tmp.path(), "wt0", "{1}", false);
 
     let output = shrt(tmp.path()).arg("list").arg("--verbose").output().unwrap();
     assert!(output.status.success());
@@ -44,7 +44,7 @@ fn list_verbose_includes_template_and_target() {
 #[test]
 fn list_json_shape_includes_all_fields() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{1}", false);
+    add_stub_shim(tmp.path(), "wt0", "{1}", false);
 
     let output = shrt(tmp.path()).arg("list").arg("--json").output().unwrap();
     assert!(output.status.success());
@@ -53,7 +53,7 @@ fn list_json_shape_includes_all_fields() {
     let arr = json.as_array().unwrap();
     assert_eq!(arr.len(), 1);
     let entry = &arr[0];
-    assert_eq!(entry["name"], "wt");
+    assert_eq!(entry["name"], "wt0");
     for field in &[
         "name",
         "target",
@@ -86,9 +86,9 @@ fn list_empty_json_is_empty_array() {
 #[test]
 fn show_default_prints_raw_sidecar_contents() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{1}", false);
+    add_stub_shim(tmp.path(), "wt0", "{1}", false);
 
-    let output = shrt(tmp.path()).arg("show").arg("wt").output().unwrap();
+    let output = shrt(tmp.path()).arg("show").arg("wt0").output().unwrap();
     assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("target = "));
@@ -99,11 +99,11 @@ fn show_default_prints_raw_sidecar_contents() {
 #[test]
 fn show_json_shape_has_path_and_config() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{1}", false);
+    add_stub_shim(tmp.path(), "wt0", "{1}", false);
 
     let output = shrt(tmp.path())
         .arg("show")
-        .arg("wt")
+        .arg("wt0")
         .arg("--json")
         .output()
         .unwrap();

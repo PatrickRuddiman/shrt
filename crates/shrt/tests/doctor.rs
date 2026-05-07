@@ -63,7 +63,7 @@ fn doctor_reports_mixed_state() {
 #[test]
 fn doctor_clean_state_no_fails() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{1}", false);
+    add_stub_shim(tmp.path(), "wt0", "{1}", false);
 
     let output = shrt(tmp.path()).arg("doctor").arg("--json").output().unwrap();
     let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
@@ -86,7 +86,7 @@ fn doctor_clean_state_no_fails() {
 #[test]
 fn doctor_text_output_uses_status_tags() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{1}", false);
+    add_stub_shim(tmp.path(), "wt0", "{1}", false);
 
     let output = shrt(tmp.path()).arg("doctor").output().unwrap();
     let stdout = String::from_utf8_lossy(&output.stdout);
@@ -105,8 +105,8 @@ fn doctor_exit_zero_on_warn_only() {
 #[test]
 fn doctor_byte_mismatch_reported() {
     let tmp = make_shim_dir();
-    add_stub_shim(tmp.path(), "wt", "{1}", false);
-    std::fs::write(tmp.path().join("wt.exe"), b"junk").unwrap();
+    add_stub_shim(tmp.path(), "wt0", "{1}", false);
+    std::fs::write(tmp.path().join("wt0.exe"), b"junk").unwrap();
 
     let output = shrt(tmp.path()).arg("doctor").arg("--json").output().unwrap();
     let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
@@ -114,7 +114,7 @@ fn doctor_byte_mismatch_reported() {
         .as_array()
         .unwrap()
         .iter()
-        .find(|c| c["name"] == "wt: bytes")
+        .find(|c| c["name"] == "wt0: bytes")
         .unwrap();
     assert_eq!(bytes["status"], "fail");
     assert!(
